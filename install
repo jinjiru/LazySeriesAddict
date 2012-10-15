@@ -1,0 +1,406 @@
+#!/bin/bash
+############################################################################################
+############### Automatic TV Shows Search, Download, Encode and Tag Workflow Installer #####
+############### Version 0.7 July 25th, 2011 ################################################
+############### Author: Lyubov Berezina jinjiru@gmail.com ##################################
+############### Licensed under GNU GPLv3 http://www.gnu.org/licenses/gpl.html ##############
+############################################################################################
+# This script is provided 'as-is', without any express or implied
+# warranty.  In no event will the author be held liable for any
+# damages arising from the use of this script.
+#
+# Permission is granted to anyone to use this script for any purpose,
+# and to alter it and redistribute it freely, subject to the following
+# restrictions:
+#
+# 1. The origin of this script must not be misrepresented; you must not
+#    claim that you wrote the original script.
+# 2. Altered scripts must be plainly marked as such, and must not be
+#    misrepresented as being the original.
+# 3. This notice may not be removed or altered from any distribution.
+############################################################################################
+# Description:
+# This script creates the needed directory and installs convert and getsubs script. 
+# It will ask for your Bierdopje API key during the installation process so keep it close. 
+# This script will also copy the Automator workflows to your ~/Library/Services/ folder.
+############################################################################################
+# Disclaimer:
+# I give no guarantees that this script will work on your system. It works on
+# mine (Apple Mac OS X 10.7.4 Lion). YMMV.
+############################################################################################
+
+# Start creating getsubs script...
+mkdir -p ~/Downloads/Series/
+touch ~/Applications/getsubs.conf
+H="~/Applications/tvshows" 
+touch $H/config
+
+# Ask user if he is going to use bierdopje for subtitles
+read -p "Will you use Bierdopje to download subtitles? (y/n) "
+if [ $REPLY == "y" ]; then
+# Ask user for API key, read the input and use it as a variable
+read -p "Enter your Bierdopje API key " -e APIinput
+
+# Set the filename for getsubs temporary file so we could later use sed to insert API key into it
+OUTFILE=getsubs_temp
+
+# Export content of the script to the getsubs_temp file
+(
+cat <<'EOF'
+#!/bin/bash
+##################################################################################
+############### GetSubtitles #####################################################
+############### Version 0.6 July 25th, 2012 ######################################
+############### Author: Lyubov Berezina jinjiru@gmail.com ########################
+##################################################################################
+# This script is provided 'as-is', without any express or implied
+# warranty.  In no event will the author be held liable for any
+# damages arising from the use of this script.
+#
+# Permission is granted to anyone to use this script for any purpose,
+# and to alter it and redistribute it freely, subject to the following
+# restrictions:
+#
+# 1. The origin of this script must not be misrepresented; you must not
+#    claim that you wrote the original script.
+# 2. Altered scripts must be plainly marked as such, and must not be
+#    misrepresented as being the original.
+# 3. This notice may not be removed or altered from any distribution.
+##################################################################################
+# Disclaimer:
+# I give no guarantees that this script will work on your system. It works on
+# mine (Apple Mac OS X 10.7.4). YMMV.
+##################################################################################
+
+touch ~/Applications/getsubs.conf
+H="~/Applications/tvshows" 
+touch $H/config
+
+# First tune
+if [ ! -d $H ];
+    then
+        touch $H
+        wget -P$H http://myshows.ru/shared/images/header/logo-tv.gif
+        login=YOUR_MYSHOWS_LOGIN
+        pass=YOUR_MYSHOWS_PASSWORD_MD5
+        echo $login:$pass > $H/config
+fi
+
+cookie="$H/tvshowscookie"
+searchurl="http://api.myshows.ru/shows/search/?q="
+loginurl="http://api.myshows.ru/profile/login?login=`head -1 $H/config | cut -d: -f1`&password=`head -1 $H/config | cut -d: -f2`"
+checkurl="http://api.myshows.ru/profile/episodes/check/"
+
+cd ~/Downloads/Series/
+
+for i in *.avi;
+do
+. ~/Applications/getsubs.conf
+BN=${i%.*};
+
+showName=${BN%-*}
+showNameN=${showName// /220}
+showNameN=`echo $showNameN | awk 'sub("...$", "")'`
+
+seasonEpisode=${BN#*-}; 
+seasonNumber=`echo $seasonEpisode | cut -c '2-3'`;
+episodeNumber=`echo $seasonEpisode | cut -c '5-6'`;
+
+localName=$showNameN
+localID=${!localName}
+
+if [[ -n $localID ]]; then
+showid=$localID 
+else
+	showName=${showName// /%20}				
+	showName=`echo $showName | awk 'sub("...$", "")'`
+	showName=`echo $showName | sed 's/and/\&/g'`
+	showName=`echo $showName | sed 's/2009/(2009)/g'`
+	showName=`echo $showName | sed 's/2010/(2010)/g'`
+	
+	/usr/bin/curl http://api.bierdopje.com/YOUR_USER_API/GetShowByName/$showName > input.xml
+	showid=`xpath input.xml "//response[position() = 1]/showid/text()" 2>/dev/null`
+
+	if [[ -n "$showid"  ]]; then
+	echo "$localName=$showid" >> ~/Applications/getsubs.conf
+	fi
+fi
+
+/usr/bin/curl http://api.bierdopje.com/YOUR_USER_API/GetAllSubsFor/$showid/$seasonNumber/$episodeNumber/en > input.xml
+count=$(xpath input.xml "count(//result)"  2>/dev/null)
+startcount=1
+
+while [ $startcount -le $count ]
+do
+	num=$startcount
+	downloadlink=`xpath input.xml "//result[position() = $startcount]/downloadlink/text()" 2>/dev/null`
+
+
+	if [[ $downloadlink != *720p* ]]; then
+		link=downloadlink_${num}
+		eval ${link}="$downloadlink"
+		pubdate=`xpath input.xml "//result[position() = $startcount]/pubdate/text()" 2>/dev/null`
+		pubdate="$pubdate"_res"$num"
+		array=( ${array[@]-} $(echo "$pubdate") )
+		filesize=`xpath input.xml "//result[position() = $startcount]/filesize/text()" 2>/dev/null`
+		remotesize=filesize_${num}
+		eval ${remotesize}="$filesize"
+	fi
+
+	
+    startcount=$((startcount+1))
+done
+
+function mysort { for i in ${unsorted_array[@]}; do echo "$i"; done | sort -n; }
+unsorted_array=${array[@]}
+sorted_array=( $(mysort) )
+last_item=( "${sorted_array[@]: -1}" )
+subnumber=$(echo -n "$last_item" | tail -c -1)
+link1=downloadlink_"$subnumber"
+finallink=${!link1}
+unset array
+unset unsorted_array
+unset sorted_array
+
+if [[ -n $finallink ]]; then 
+	parts=(${finallink//\// });
+	fileName="${parts[5]}";
+	
+	if [ ! -f "$BN.srt" ]; then
+	`/usr/local/bin/wget -c -O "$fileName".srt "$finallink" &`;
+	showName=${showName// /%20}; 							
+	showName=`echo $showName | awk 'sub("...$", "")'` 		
+	showName=`echo $showName | sed 's/and/\&/g'`; 			
+
+	showName=`echo $showName | sed 's/2009/(2009)/g'`;
+	showName=`echo $showName | sed 's/2010/(2010)/g'`;
+	MSepisodeNum=$(echo "$seasonEpisode" | sed 's/S/s/' | sed 's/E/e/' | sed 's/^[ \t]*//')
+	idshow=$(wget -qO- "$searchurl$showName" | egrep -o "\"id\":[0-9]+" | egrep -o "[0-9]+" | head -1) 
+	episode=$(wget -qO- "http://api.myshows.ru/shows/$idshow" | tr "," "\n" | egrep "(id\":|match\":|title\":|episodes\":|show\":|shortName\":)" | grep -B3 "$MSepisodeNum")
+	idepisode=$(echo "$episode" | grep "id" | cut -d: -f3)
+	wget --spider -qO- --save-cookies=$cookie --keep-session-cookies "$loginurl"
+	wget --load-cookies=$cookie -qO- "$checkurl$idepisode"
+	
+	else
+		
+		remoteSubsFileSize=filesize_"$subnumber"
+		remoteFileSize=${!remoteSubsFileSize}
+		localSubsFile=$BN.srt
+		localSubsFileSize=`/bin/ls -l "$localSubsFile" | /usr/bin/awk '{ print $5 }'`
+
+			if [ "$localSubsFileSize" != $remoteFileSize ] ; then
+				rm "$localSubsFile"
+				# Now we have downloadLink and fileName, let's download the file
+				`/usr/local/bin/wget -c -O "$fileName".srt "$finallink" &`;
+			fi
+
+	fi
+fi
+	
+rm input.xml
+unset BN
+done
+
+exit 0
+EOF
+) > $OUTFILE
+
+# Replace YOUR_USER_API in the getsubs_temp with the API key entered by user
+cat getsubs_temp | sed "s/YOUR_USER_API/$APIinput/g" > getsubs_temp1;
+
+# Ask user if he is going to use MyShows for tracking downloads
+read -p "Will you use MyShows to track downloaded series? (y/n) "
+if [ $REPLY == "y" ]; then
+	
+# Ask user for login, read the input and use it as a variable
+read -p "Enter your MyShows login " -e MSLoginInput
+# Ask user for login, read the input and use it as a variable
+read -p "Enter your MyShows password " -e MSPassInput
+MSPassInputMD5=`echo -n "$MSPassInput" | md5`
+
+cat getsubs_temp1 | sed "s/YOUR_MYSHOWS_LOGIN/$MSLoginInput/g" > getsubs_temp2;
+cat getsubs_temp2 | sed "s/YOUR_MYSHOWS_PASSWORD_MD5/$MSPassInputMD5/g" > getsubs;
+
+
+else
+	mv getsubs_temp1 getsubs	 
+fi	
+
+
+#Move script to user's Applications folder
+mv getsubs ~/Applications;
+
+# Remove temporary file
+rm getsubs_temp*;
+
+# Make getsubs executable
+chmod +x ~/Applications/getsubs;
+
+# Add the script to crontab
+crontab -l > tmpfile
+echo '01	01	*	*	*	/bin/bash ~/Applications/getsubs' >> tmpfile
+crontab tmpfile
+rm tmpfile
+
+else 
+	echo 'Skipping creating getsubs script'
+fi
+
+# Ask user for his device
+echo
+echo "Select your device from the list below:"
+echo "1) iPod"
+echo "2) iPhone 3G, iPhone 3GS, iPod Touch"
+echo "3) iPhone 4"
+echo "4) iPad"
+echo "5) AppleTV 1"
+echo "6) AppleTV 2"
+echo
+echo "Enter Choice:"
+read -e INPUT
+echo
+
+while [ $INPUT != 1 ] && [ $INPUT != 2 ] && [ $INPUT != 3 ] && [ $INPUT != 4 ] && [ $INPUT != 5 ] && [ $INPUT != 6 ] || [ -z "$INPUT" ]; do
+	echo
+	echo "You did not enter an appropriate choice.  Please enter 1, 2, 3, 4, 5 or 6."
+	echo "1) iPod"
+	echo "2) iPhone 3G, iPhone 3GS, iPod Touch"
+	echo "3) iPhone 4"
+	echo "4) iPad"
+	echo "5) AppleTV 1"
+	echo "6) AppleTV 2"
+	echo
+	echo "Enter Device:"
+	read -e INPUT
+	echo
+done
+
+# Provide presets according to the device
+case $INPUT in
+1)
+        DevicePreset="-e x264 -b 700 -a 1 -E faac -B 160 -6 dpl2 -R Auto -D 0.0 -f mp4 -I -X 320 -m -x level=30:bframes=0:weightp=0:cabac=0:ref=1:vbv-maxrate=768:vbv-bufsize=2000:analyse=all:me=umh:no-fast-pskip=1:subme=6:8x8dct=0:trellis=0";;
+2)
+        DevicePreset="-e x264 -q 20.0 -a 1 -E faac -B 128 -6 dpl2 -R Auto -D 0.0 -f mp4 -X 480 -m -x cabac=0:ref=2:me=umh:bframes=0:weightp=0:subme=6:8x8dct=0:trellis=0";;
+3)
+        DevicePreset="-e x264 -q 20.0 -r 29.97 --pfr  -a 1 -E faac -B 160 -6 dpl2 -R Auto -D 0.0 -f mp4 -4 -X 960 --loose-anamorphic -m";;
+4)
+		DevicePreset="-e x264 -q 20.0 -r 29.97 --pfr  -a 1 -E faac -B 160 -6 dpl2 -R Auto -D 0.0 -f mp4 -4 -X 1024 --loose-anamorphic -m";;
+5)
+		DevicePreset="-e x264 -q 20.0 -a 1,1 -E faac,copy:ac3 -B 160,160 -6 dpl2,auto -R Auto,Auto -D 0.0,0.0 -f mp4 -4 -X 960 --loose-anamorphic -m -x cabac=0:ref=2:me=umh:b-pyramid=none:b-adapt=2:weightb=0:trellis=0:weightp=0:vbv-maxrate=9500:vbv-bufsize=9500";;
+6)
+		DevicePreset="-e x264 -q 20.0 -r 29.97 --pfr  -a 1,1 -E faac,copy:ac3 -B 160,160 -6 dpl2,auto -R Auto,Auto -D 0.0,0.0 -f mp4 -4 -X 1280 --loose-anamorphic -m";;
+*)
+        STATUS=1
+esac
+
+echo 'Creating convert script'
+#Start creating convert script
+OUTFILE1=convert_temp
+
+# Export content of the script to the convert file
+(
+cat <<'EOF'
+#!/bin/bash
+##################################################################################
+############### Convert series v 0.3 #############################################
+############### Author: Lyubov Berezina jinjiru@gmail.com ########################
+##################################################################################
+# This script is provided 'as-is', without any express or implied
+# warranty.  In no event will the author be held liable for any
+# damages arising from the use of this script.
+#
+# Permission is granted to anyone to use this script for any purpose,
+# and to alter it and redistribute it freely, subject to the following
+# restrictions:
+#
+# 1. The origin of this script must not be misrepresented; you must not
+#    claim that you wrote the original script.
+# 2. Altered scripts must be plainly marked as such, and must not be
+#    misrepresented as being the original.
+# 3. This notice may not be removed or altered from any distribution.
+##################################################################################
+# Description:
+# This script does recursive scanning of a Series folder and encodes all titles
+# with their subtitles.
+##################################################################################
+# Disclaimer:
+# I give no guarantees that this script will work on your system. It works on
+# mine (Apple Mac OS X 10.7 Lion with HandBrakeCLI 0.9.4. YMMV.
+##################################################################################
+
+cd ~/Downloads/Series/
+
+for i in *.avi;
+do 
+	BN=${i%.*}
+	START_USER_FI
+		/Applications/HandBrakeCLI -i "$BN".avi -o "$BN".m4v USER_SUBS_FORMAT YOUR_PRESET
+
+		if [ $? == 0 ]
+		then
+		mv "$BN".avi ~/.Trash/ 
+		mv "$BN".srt ~/.Trash/
+		else
+			echo "Error encoding "$BN".avi" >> errors.log;
+			rm "$BN".m4v
+		fi
+	END_USER_FI
+done
+exit
+EOF
+
+) > $OUTFILE1
+
+read -p "Do you use srt files which need to be encoded with the video files? (y/n) "
+if [ $REPLY == "y" ]; then
+	CHECK_SUBS_INPUT="if [ -f \"\$BN\".srt ]; then" 
+	SUBS_FORMAT="--srt-file \"\$BN\".srt --srt-codeset UTF-8 --srt-lang eng"
+	cat convert_temp | sed "s/START_USER_FI/$CHECK_SUBS_INPUT/g" | sed "s/END_USER_FI/fi/g" | sed "s/USER_SUBS_FORMAT/$SUBS_FORMAT/g" > convert_temp1
+else
+	cat convert_temp | sed "s/END_USER_FI//g" | sed "s/START_USER_FI//g" | sed "s/USER_SUBS_FORMAT//g" > convert_temp1	
+fi
+
+# Replace YOUR_PRESET in the convert_temp with the needed preset
+cat convert_temp1 | sed "s/YOUR_PRESET/$DevicePreset/g" > convert;
+
+#Move script to user's Applications folder
+mv convert ~/Applications;
+
+# Remove temporary files
+rm convert_temp;
+rm convert_temp1;
+
+# Make getsubs executable
+chmod +x ~/Applications/convert;
+
+# Add the script to crontab
+crontab -l > tmpfile;
+echo '00	06	*	*	*	/bin/bash ~/Applications/convert' >> tmpfile;
+crontab tmpfile;
+rm tmpfile;
+
+# Install BatchRip Workflows
+echo 'All the scripts were created successfully, now we need to install BatchRip workflows. I will now run the installer. When you finish please do not forget to come back here and finish the script installation.'
+
+currentDir=$(cd `dirname $0` && pwd)
+
+# Copy Automator workflows (we need to use -R as workflows are folders not files... weird!)
+cp -R $currentDir/Automator\ Workflows/* ~/Library/Services/
+
+hdiutil attach "$currentDir/BatchRipActions-1.0.4.dmg" && /usr/bin/open /Volumes/Batch\ Rip\ Actions\ for\ Automator/Batch\ Rip\ Actions\ for\ Automator.pkg
+
+read -p "Have you installed BatchRip? (y/n) "
+if [ $REPLY == "y" ]; then
+	hdiutil detach "/Volumes/Batch Rip Actions for Automator"
+
+	# Edit the needed workflow
+	echo 'I will now open the workflow in Automator. Please check the box which says Replace original, save and quit Automator.'
+	/usr/bin/open ~/Library/Services/Batch\ Rip\ •\ Add\ TV\ Tags.workflow/
+
+else
+	echo 'Please install them later and eject the .dmg manually'
+fi
+
+
+echo 'Everything seems to be installed as needed. Exiting now, you can quit the Terminal.'
+exit 0
