@@ -1,56 +1,7 @@
 #!/bin/bash
-############################################################################################
-############### Automatic TV Shows Search, Download, Encode and Tag Workflow Installer #####
-############### Version 0.7 July 25th, 2011 ################################################
-############### Author: Lyubov Berezina jinjiru@gmail.com ##################################
-############### Licensed under GNU GPLv3 http://www.gnu.org/licenses/gpl.html ##############
-############################################################################################
-# This script is provided 'as-is', without any express or implied
-# warranty.  In no event will the author be held liable for any
-# damages arising from the use of this script.
-#
-# Permission is granted to anyone to use this script for any purpose,
-# and to alter it and redistribute it freely, subject to the following
-# restrictions:
-#
-# 1. The origin of this script must not be misrepresented; you must not
-#    claim that you wrote the original script.
-# 2. Altered scripts must be plainly marked as such, and must not be
-#    misrepresented as being the original.
-# 3. This notice may not be removed or altered from any distribution.
-############################################################################################
-# Description:
-# This script creates the needed directory and installs convert and getsubs script. 
-# It will ask for your Bierdopje API key during the installation process so keep it close. 
-# This script will also copy the Automator workflows to your ~/Library/Services/ folder.
-############################################################################################
-# Disclaimer:
-# I give no guarantees that this script will work on your system. It works on
-# mine (Apple Mac OS X 10.7.4 Lion). YMMV.
-############################################################################################
-
-# Start creating getsubs script...
-mkdir -p ~/Downloads/Series/
-touch ~/Applications/getsubs.conf
-H="~/Applications/tvshows" 
-touch $H/config
-
-# Ask user if he is going to use bierdopje for subtitles
-read -p "Will you use Bierdopje to download subtitles? (y/n) "
-if [ $REPLY == "y" ]; then
-# Ask user for API key, read the input and use it as a variable
-read -p "Enter your Bierdopje API key " -e APIinput
-
-# Set the filename for getsubs temporary file so we could later use sed to insert API key into it
-OUTFILE=getsubs_temp
-
-# Export content of the script to the getsubs_temp file
-(
-cat <<'EOF'
-#!/bin/bash
 ##################################################################################
-############### GetSubtitles #####################################################
-############### Version 0.6 July 25th, 2012 ######################################
+############### GetSubs Installer ################################################
+############### Version 0.8 September 17th, 2013 #################################
 ############### Author: Lyubov Berezina jinjiru@gmail.com ########################
 ##################################################################################
 # This script is provided 'as-is', without any express or implied
@@ -69,56 +20,94 @@ cat <<'EOF'
 ##################################################################################
 # Disclaimer:
 # I give no guarantees that this script will work on your system. It works on
-# mine (Apple Mac OS X 10.7.4). YMMV.
+# mine (Apple Mac OS X 10.8.4 Mountain Lion). YMMV.
 ##################################################################################
 
+# Start creating getsubs script...
+mkdir -p ~/Downloads/Series/
 touch ~/Applications/getsubs.conf
-H="~/Applications/tvshows" 
-touch $H/config
+touch ~/Applications/imdbid.conf
 
-# First tune
-if [ ! -d $H ];
-    then
-        touch $H
-        wget -P$H http://myshows.ru/shared/images/header/logo-tv.gif
-        login=YOUR_MYSHOWS_LOGIN
-        pass=YOUR_MYSHOWS_PASSWORD_MD5
-        echo $login:$pass > $H/config
-fi
+echo "I'm ready to start the installation process. Please make sure you have the Bierdopje and Trakt API accounts and API keys prior to the installation process start. Please refer to the README file for detailed instructions on how to obtain them."
 
-cookie="$H/tvshowscookie"
-searchurl="http://api.myshows.ru/shows/search/?q="
-loginurl="http://api.myshows.ru/profile/login?login=`head -1 $H/config | cut -d: -f1`&password=`head -1 $H/config | cut -d: -f2`"
-checkurl="http://api.myshows.ru/profile/episodes/check/"
+# Ask user if he is going to use bierdopje for subtitles
+read -p "Will you use Bierdopje to download subtitles? (y/n) "
+if [ $REPLY == "y" ]; then
+# Ask user for API key, read the input and use it as a variable
+read -p "Enter your Bierdopje API key " -e BierdopjeAPIinput
+
+OUTFILE=getsubs_temp
+
+(
+cat <<'EOF'
+#!/bin/bash
+##################################################################################
+############### GetSubs ##########################################################
+############### Version 0.8 September 17th, 2013 #################################
+############### Author: Lyubov Berezina jinjiru@gmail.com ########################
+##################################################################################
+# This script is provided 'as-is', without any express or implied
+# warranty.  In no event will the author be held liable for any
+# damages arising from the use of this script.
+#
+# Permission is granted to anyone to use this script for any purpose,
+# and to alter it and redistribute it freely, subject to the following
+# restrictions:
+#
+# 1. The origin of this script must not be misrepresented; you must not
+#    claim that you wrote the original script.
+# 2. Altered scripts must be plainly marked as such, and must not be
+#    misrepresented as being the original.
+# 3. This notice may not be removed or altered from any distribution.
+##################################################################################
+# Disclaimer:
+# I give no guarantees that this script will work on your system. It works on
+# mine (Apple Mac OS X 10.8.4 Mountain Lion). YMMV.
+##################################################################################
+
+## Trakt account info
+trakt_user="YOUR_TRAKT_LOGIN"
+trakt_pass="YOUR_TRAKT_PASSWORD_SHA1"
+trakt_api="YOUR_TRAKT_API_KEY"
+trakt_url="http://api.trakt.tv/show/episode/seen/$trakt_api"
+
+## Some preliminary showid configs
+touch ~/Applications/getsubs.conf
+touch ~/Applications/imdbid.conf
 
 cd ~/Downloads/Series/
 
-for i in *.avi;
+
+for i in *.mp4;
 do
 . ~/Applications/getsubs.conf
+. ~/Applications/imdbid.conf
 BN=${i%.*};
 
-showName=${BN%-*}
-showNameN=${showName// /220}
-showNameN=`echo $showNameN | awk 'sub("...$", "")'`
-
-seasonEpisode=${BN#*-}; 
+showName=${BN%-*};											
+showNameN=${showName// /220}; 								
+imdb_showName=${showNameN//220/110}; 						
+showNameN=`echo $showNameN | awk 'sub("...$", "")'` 		
+trakt_showName=${showNameN//220/ };							
+seasonEpisode=${BN#*-}; 									
 seasonNumber=`echo $seasonEpisode | cut -c '2-3'`;
 episodeNumber=`echo $seasonEpisode | cut -c '5-6'`;
 
 localName=$showNameN
 localID=${!localName}
 
+
 if [[ -n $localID ]]; then
-showid=$localID 
+showid=$localID # сразу пишем в showID
 else
-	showName=${showName// /%20}				
-	showName=`echo $showName | awk 'sub("...$", "")'`
-	showName=`echo $showName | sed 's/and/\&/g'`
-	showName=`echo $showName | sed 's/2009/(2009)/g'`
-	showName=`echo $showName | sed 's/2010/(2010)/g'`
+	showName=${showName// /%20}; 								
+	showName=`echo $showName | awk 'sub("...$", "")'` 			
+	#showName=`echo $showName | sed 's/and/\&/g'`; 
+
+	showName=`echo $showName | sed 's/2009/(2009)/g'`;
+	showName=`echo $showName | sed 's/2010/(2010)/g'`;
 	
-	/usr/bin/curl http://api.bierdopje.com/YOUR_USER_API/GetShowByName/$showName > input.xml
+	/usr/bin/curl http://api.bierdopje.com/YOUR_BIERDOPJE_API/GetShowByName/$showName > input.xml
 	showid=`xpath input.xml "//response[position() = 1]/showid/text()" 2>/dev/null`
 
 	if [[ -n "$showid"  ]]; then
@@ -126,7 +115,7 @@ else
 	fi
 fi
 
-/usr/bin/curl http://api.bierdopje.com/YOUR_USER_API/GetAllSubsFor/$showid/$seasonNumber/$episodeNumber/en > input.xml
+/usr/bin/curl http://api.bierdopje.com/3C638475DB2F19BE/GetAllSubsFor/$showid/$seasonNumber/$episodeNumber/en > input.xml
 count=$(xpath input.xml "count(//result)"  2>/dev/null)
 startcount=1
 
@@ -162,24 +151,44 @@ unset array
 unset unsorted_array
 unset sorted_array
 
-if [[ -n $finallink ]]; then 
-	parts=(${finallink//\// });
-	fileName="${parts[5]}";
-	
+if [[ -n $finallink ]]; then
+				parts=(${finallink//\// });
+				fileName="${parts[5]}";   
+				
 	if [ ! -f "$BN.srt" ]; then
 	`/usr/local/bin/wget -c -O "$fileName".srt "$finallink" &`;
-	showName=${showName// /%20}; 							
-	showName=`echo $showName | awk 'sub("...$", "")'` 		
-	showName=`echo $showName | sed 's/and/\&/g'`; 			
 
-	showName=`echo $showName | sed 's/2009/(2009)/g'`;
-	showName=`echo $showName | sed 's/2010/(2010)/g'`;
-	MSepisodeNum=$(echo "$seasonEpisode" | sed 's/S/s/' | sed 's/E/e/' | sed 's/^[ \t]*//')
-	idshow=$(wget -qO- "$searchurl$showName" | egrep -o "\"id\":[0-9]+" | egrep -o "[0-9]+" | head -1) 
-	episode=$(wget -qO- "http://api.myshows.ru/shows/$idshow" | tr "," "\n" | egrep "(id\":|match\":|title\":|episodes\":|show\":|shortName\":)" | grep -B3 "$MSepisodeNum")
-	idepisode=$(echo "$episode" | grep "id" | cut -d: -f3)
-	wget --spider -qO- --save-cookies=$cookie --keep-session-cookies "$loginurl"
-	wget --load-cookies=$cookie -qO- "$checkurl$idepisode"
+
+	    trakt_title="$trakt_showName"
+	    trakt_season="$seasonNumber"
+	    trakt_episode="$episodeNumber"
+	
+		localImdbName=$imdb_showName
+		localImdbID=${!localImdbName}
+
+		if [[ -n $localImdbID ]]; then
+		imdb_id=$localImdbID # сразу пишем в imdb_id
+		else
+			
+			function jsonval {
+			    temp=`echo $json | sed 's/\\\\\//\//g' | sed 's/[{}]//g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | sed 's/\"\:\"/\|/g' | sed 's/[\,]/ /g' | sed 's/\"//g' | grep -w $prop | cut -d":" -f2| sed -e 's/^ *//g' -e 's/ *$//g'
+				echo ${temp##*|}`
+			    echo ${temp##*|}
+			}
+
+			json=`curl -s -X GET http://mymovieapi.com/?title=$trakt_title&type=json&plot=simple&episode=0&limit=1&yg=0&mt=none&lang=en-US&offset=&aka=simple&release=simple&business=0&tech=0`
+			prop='imdb_id'
+			imdb_id=`jsonval`
+
+			if [[ -n "$imdb_id"  ]]; then
+			echo "$localImdbName=$imdb_id" >> ~/Applications/imdbid.conf
+			fi
+		fi
+
+		curl -i \
+		-H "Accept: application/json" \
+		-H "Content-Type:application/json" \
+		-X POST --data '{"username":"'"$trakt_user"'","password":"'"$trakt_pass"'","title":"'"$trakt_title"'","imdb_id":"'"$imdb_id"'","episodes":[{"season":"'"$trakt_season"'","episode":"'"$trakt_episode"'"}]}' "$trakt_url"
 	
 	else
 		
@@ -196,7 +205,6 @@ if [[ -n $finallink ]]; then
 
 	fi
 fi
-	
 rm input.xml
 unset BN
 done
@@ -205,38 +213,28 @@ exit 0
 EOF
 ) > $OUTFILE
 
-# Replace YOUR_USER_API in the getsubs_temp with the API key entered by user
-cat getsubs_temp | sed "s/YOUR_USER_API/$APIinput/g" > getsubs_temp1;
+cat getsubs_temp | sed "s/YOUR_BIERDOPJE_API/$BierdopjeAPIinput/g" > getsubs_temp1;
 
-# Ask user if he is going to use MyShows for tracking downloads
-read -p "Will you use MyShows to track downloaded series? (y/n) "
+read -p "Will you use Trakt to track downloaded series? (y/n) "
 if [ $REPLY == "y" ]; then
-	
-# Ask user for login, read the input and use it as a variable
-read -p "Enter your MyShows login " -e MSLoginInput
-# Ask user for login, read the input and use it as a variable
-read -p "Enter your MyShows password " -e MSPassInput
-MSPassInputMD5=`echo -n "$MSPassInput" | md5`
 
-cat getsubs_temp1 | sed "s/YOUR_MYSHOWS_LOGIN/$MSLoginInput/g" > getsubs_temp2;
-cat getsubs_temp2 | sed "s/YOUR_MYSHOWS_PASSWORD_MD5/$MSPassInputMD5/g" > getsubs;
+read -p "Enter your Trakt login " -e TraktLoginInput
+read -p "Enter your Trakt password " -e TraktPassInput
+TraktPassInputSHA1=`echo -n "$TraktPassInput" | shasum`
+read -p "Enter your Trakt API key " -e TraktAPIinput
+
+cat getsubs_temp1 | sed "s/YOUR_TRAKT_LOGIN/$TraktLoginInput/g" > getsubs_temp2;
+cat getsubs_temp2 | sed "s/YOUR_TRAKT_PASSWORD_SHA1/$TraktPassInputSHA1/g" > getsubs_temp3;
+cat getsubs_temp3 | sed "s/YOUR_TRAKT_API_KEY/$TraktAPIinput/g" > getsubs;
 
 
 else
 	mv getsubs_temp1 getsubs	 
 fi	
 
-
-#Move script to user's Applications folder
 mv getsubs ~/Applications;
-
-# Remove temporary file
 rm getsubs_temp*;
-
-# Make getsubs executable
 chmod +x ~/Applications/getsubs;
-
-# Add the script to crontab
 crontab -l > tmpfile
 echo '01	01	*	*	*	/bin/bash ~/Applications/getsubs' >> tmpfile
 crontab tmpfile
@@ -246,7 +244,6 @@ else
 	echo 'Skipping creating getsubs script'
 fi
 
-# Ask user for his device
 echo
 echo "Select your device from the list below:"
 echo "1) iPod"
@@ -275,7 +272,6 @@ while [ $INPUT != 1 ] && [ $INPUT != 2 ] && [ $INPUT != 3 ] && [ $INPUT != 4 ] &
 	echo
 done
 
-# Provide presets according to the device
 case $INPUT in
 1)
         DevicePreset="-e x264 -b 700 -a 1 -E faac -B 160 -6 dpl2 -R Auto -D 0.0 -f mp4 -I -X 320 -m -x level=30:bframes=0:weightp=0:cabac=0:ref=1:vbv-maxrate=768:vbv-bufsize=2000:analyse=all:me=umh:no-fast-pskip=1:subme=6:8x8dct=0:trellis=0";;
@@ -296,8 +292,6 @@ esac
 echo 'Creating convert script'
 #Start creating convert script
 OUTFILE1=convert_temp
-
-# Export content of the script to the convert file
 (
 cat <<'EOF'
 #!/bin/bash
@@ -362,29 +356,19 @@ fi
 
 # Replace YOUR_PRESET in the convert_temp with the needed preset
 cat convert_temp1 | sed "s/YOUR_PRESET/$DevicePreset/g" > convert;
-
-#Move script to user's Applications folder
 mv convert ~/Applications;
-
-# Remove temporary files
 rm convert_temp;
 rm convert_temp1;
-
-# Make getsubs executable
 chmod +x ~/Applications/convert;
-
-# Add the script to crontab
 crontab -l > tmpfile;
 echo '00	06	*	*	*	/bin/bash ~/Applications/convert' >> tmpfile;
 crontab tmpfile;
 rm tmpfile;
 
-# Install BatchRip Workflows
 echo 'All the scripts were created successfully, now we need to install BatchRip workflows. I will now run the installer. When you finish please do not forget to come back here and finish the script installation.'
 
 currentDir=$(cd `dirname $0` && pwd)
 
-# Copy Automator workflows (we need to use -R as workflows are folders not files... weird!)
 cp -R $currentDir/Automator\ Workflows/* ~/Library/Services/
 
 hdiutil attach "$currentDir/BatchRipActions-1.0.4.dmg" && /usr/bin/open /Volumes/Batch\ Rip\ Actions\ for\ Automator/Batch\ Rip\ Actions\ for\ Automator.pkg
@@ -393,7 +377,6 @@ read -p "Have you installed BatchRip? (y/n) "
 if [ $REPLY == "y" ]; then
 	hdiutil detach "/Volumes/Batch Rip Actions for Automator"
 
-	# Edit the needed workflow
 	echo 'I will now open the workflow in Automator. Please check the box which says Replace original, save and quit Automator.'
 	/usr/bin/open ~/Library/Services/Batch\ Rip\ •\ Add\ TV\ Tags.workflow/
 
