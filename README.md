@@ -21,8 +21,8 @@ I give no guarantees that this script will work on your system. It works on mine
 
 Pre-setup
 -----
-1. Bierdopje account and API key:
-    Visit http://www.bierdopje.com/ and press Registreren in the upper right corner of the page:
+1\. Bierdopje account and API key:
+1.1\ Visit http://www.bierdopje.com/ and press Registreren in the upper right corner of the page:
 
 ![Bierdopje Registration](http://farm2.static.flickr.com/1098/5128232682_efbdc4022b.jpg)
 
