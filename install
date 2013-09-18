@@ -371,19 +371,5 @@ currentDir=$(cd `dirname $0` && pwd)
 
 cp -R $currentDir/Automator\ Workflows/* ~/Library/Services/
 
-hdiutil attach "$currentDir/BatchRipActions-1.0.4.dmg" && /usr/bin/open /Volumes/Batch\ Rip\ Actions\ for\ Automator/Batch\ Rip\ Actions\ for\ Automator.pkg
-
-read -p "Have you installed BatchRip? (y/n) "
-if [ $REPLY == "y" ]; then
-	hdiutil detach "/Volumes/Batch Rip Actions for Automator"
-
-	echo 'I will now open the workflow in Automator. Please check the box which says Replace original, save and quit Automator.'
-	/usr/bin/open ~/Library/Services/Batch\ Rip\ •\ Add\ TV\ Tags.workflow/
-
-else
-	echo 'Please install them later and eject the .dmg manually'
-fi
-
-
 echo 'Everything seems to be installed as needed. Exiting now, you can quit the Terminal.'
 exit 0
