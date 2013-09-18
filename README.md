@@ -22,15 +22,15 @@ I give no guarantees that this script will work on your system. It works on mine
 Pre-setup
 -----
 1. Bierdopje account and API key:
-1.1 Visit http://www.bierdopje.com/ and press Registreren in the upper right corner of the page:
+    Visit http://www.bierdopje.com/ and press Registreren in the upper right corner of the page:
 
 ![Bierdopje Registration](http://farm2.static.flickr.com/1098/5128232682_efbdc4022b.jpg)
 
-1.2 Fill a registration form:
+    Fill a registration form:
 
 ![Registration form](http://farm2.static.flickr.com/1351/5128232638_dfa6b27a57.jpg)
 
-1.3 Visit you account settings by pressing “instellingen” in the upper right corner:
+    Visit you account settings by pressing “instellingen” in the upper right corner:
 
 ![Bierdopje Registration](http://farm2.static.flickr.com/1115/5128232278_a48fdb26ba.jpg)
 
@@ -38,15 +38,15 @@ Here's the profile view:
 
 ![Bierdopje Registration](http://farm5.static.flickr.com/4052/5128232356_9a5c85256a.jpg)
 
-1.4 Choose API:
+    Choose API:
 
 ![Bierdopje Registration](http://farm2.static.flickr.com/1106/5127627909_c39824101c_m.jpg)
 
-1.5 Fill a simple form:
+    Fill a simple form:
 
 ![Bierdopje Registration](http://farm5.static.flickr.com/4071/5127627951_028a039a3b.jpg)
 
-1.6 Get an API key:
+    Get an API key:
 
 ![Bierdopje Registration](http://farm2.static.flickr.com/1088/5127689407_02fcb98aca.jpg)
 
