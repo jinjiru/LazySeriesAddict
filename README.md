@@ -73,7 +73,7 @@ Here's the profile view:
 
 
 #### Installing wget if needed:
-```bash
+```sh
 $> ftp ftр://ftp.gnu.org/gnu/wget/wget-latest.tar.gz 
 $> tar -xvzf wget-latest.tar.gz
 $> cd wget-{version}
@@ -84,7 +84,7 @@ $> sudo make install
 
 
 #### Installing curl if needed:
-```bash
+```sh
 $> wget -с httр://www.hmug.org/pub/MacOS_X/BSD/Applications/Internet/curl/curl+ssl-7.21.2-1-osx6-x86.tar.gz
 $> tar -xvzf curl+ssl-7.21.2-1-osx6-x86.tar.gz
 $> cd curl-7.21.2
