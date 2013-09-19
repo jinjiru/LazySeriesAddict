@@ -24,7 +24,7 @@
 ##################################################################################
 
 # Start creating getsubs script...
-mkdir -p ~/Downloads/Movies/TVShows
+mkdir -p ~/Movies/TVShows
 touch ~/Applications/getsubs.conf
 touch ~/Applications/imdbid.conf
 
@@ -75,7 +75,7 @@ trakt_url="http://api.trakt.tv/show/episode/seen/$trakt_api"
 touch ~/Applications/getsubs.conf
 touch ~/Applications/imdbid.conf
 
-cd ~/Downloads/Movies/TVShows
+cd ~/Movies/TVShows
 
 for i in *.mp4;
 do

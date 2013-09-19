@@ -36,8 +36,8 @@ Using Trakt requires using IMDB ids for the search so I'm using the unofficial I
 Using Trakt requires an API key wich is free and easy to get (please see below).
 
 ### Assumptions:
-1. The new episodes are downloaded into the ~/Downloads/Movies folder and are moved into ~/Downloads/Movies/TVShows using a  Hazel rule.
-2. All the episodes are stored in the ~/Downloads/Movies/TVShows folder without any deeper inner structure (as I do not store the episodes forever and remove them from my hard drive right after I transfer them to my iPad or watch them on my MBP).
+1. The new episodes are downloaded into the ~/Movies folder and are moved into ~//Movies/TVShows using a  Hazel rule.
+2. All the episodes are stored in the ~/Movies/TVShows folder without any deeper inner structure (as I do not store the episodes forever and remove them from my hard drive right after I transfer them to my iPad or watch them on my MBP).
 3. All the episodes are stored with the following filename format: Show Name - S00E00.mp4 or in case of a double episode Show name - S00E0102.mp4
 4. All the subtitles are downloaded and stored the same way the episodes are.
 5. All the Hazel rules are set up for these folders so if you're using any other folder you will need to change the Hazel rules to reflect your environment.
