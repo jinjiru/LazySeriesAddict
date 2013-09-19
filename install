@@ -24,11 +24,11 @@
 ##################################################################################
 
 # Start creating getsubs script...
-mkdir -p ~/Downloads/Series/
+mkdir -p ~/Downloads/Movies/TVShows
 touch ~/Applications/getsubs.conf
 touch ~/Applications/imdbid.conf
 
-echo "I'm ready to start the installation process. Please make sure you have the Bierdopje and Trakt API accounts and API keys prior to the installation process start. Please refer to the README file for detailed instructions on how to obtain them."
+echo "I'm ready to start the installation process. Please make sure you have the Bierdopje and Trakt accounts and API keys prior to the installation process. Please refer to the README file for detailed instructions on how to obtain them."
 
 # Ask user if he is going to use bierdopje for subtitles
 read -p "Will you use Bierdopje to download subtitles? (y/n) "
@@ -75,15 +75,14 @@ trakt_url="http://api.trakt.tv/show/episode/seen/$trakt_api"
 touch ~/Applications/getsubs.conf
 touch ~/Applications/imdbid.conf
 
-cd ~/Downloads/Series/
-
+cd ~/Downloads/Movies/TVShows
 
 for i in *.mp4;
 do
 . ~/Applications/getsubs.conf
 . ~/Applications/imdbid.conf
-BN=${i%.*};
 
+BN=${i%.*};
 showName=${BN%-*};											
 showNameN=${showName// /220}; 								
 imdb_showName=${showNameN//220/110}; 						
@@ -92,13 +91,11 @@ trakt_showName=${showNameN//220/ };
 seasonEpisode=${BN#*-}; 									
 seasonNumber=`echo $seasonEpisode | cut -c '2-3'`;
 episodeNumber=`echo $seasonEpisode | cut -c '5-6'`;
-
 localName=$showNameN
 localID=${!localName}
 
-
 if [[ -n $localID ]]; then
-showid=$localID # сразу пишем в showID
+	showid=$localID
 else
 	showName=${showName// /%20}; 								
 	showName=`echo $showName | awk 'sub("...$", "")'` 			
@@ -124,8 +121,8 @@ do
 	num=$startcount
 	downloadlink=`xpath input.xml "//result[position() = $startcount]/downloadlink/text()" 2>/dev/null`
 
-
-	if [[ $downloadlink != *720p* ]]; then
+#Do not download 720p links - outdated but left there if needed
+#	if [[ $downloadlink != *720p* ]]; then
 		link=downloadlink_${num}
 		eval ${link}="$downloadlink"
 		pubdate=`xpath input.xml "//result[position() = $startcount]/pubdate/text()" 2>/dev/null`
@@ -134,9 +131,8 @@ do
 		filesize=`xpath input.xml "//result[position() = $startcount]/filesize/text()" 2>/dev/null`
 		remotesize=filesize_${num}
 		eval ${remotesize}="$filesize"
-	fi
+#	fi
 
-	
     startcount=$((startcount+1))
 done
 
@@ -167,7 +163,7 @@ if [[ -n $finallink ]]; then
 		localImdbID=${!localImdbName}
 
 		if [[ -n $localImdbID ]]; then
-		imdb_id=$localImdbID # сразу пишем в imdb_id
+		imdb_id=$localImdbID
 		else
 			
 			function jsonval {
@@ -244,128 +240,7 @@ else
 	echo 'Skipping creating getsubs script'
 fi
 
-echo
-echo "Select your device from the list below:"
-echo "1) iPod"
-echo "2) iPhone 3G, iPhone 3GS, iPod Touch"
-echo "3) iPhone 4"
-echo "4) iPad"
-echo "5) AppleTV 1"
-echo "6) AppleTV 2"
-echo
-echo "Enter Choice:"
-read -e INPUT
-echo
-
-while [ $INPUT != 1 ] && [ $INPUT != 2 ] && [ $INPUT != 3 ] && [ $INPUT != 4 ] && [ $INPUT != 5 ] && [ $INPUT != 6 ] || [ -z "$INPUT" ]; do
-	echo
-	echo "You did not enter an appropriate choice.  Please enter 1, 2, 3, 4, 5 or 6."
-	echo "1) iPod"
-	echo "2) iPhone 3G, iPhone 3GS, iPod Touch"
-	echo "3) iPhone 4"
-	echo "4) iPad"
-	echo "5) AppleTV 1"
-	echo "6) AppleTV 2"
-	echo
-	echo "Enter Device:"
-	read -e INPUT
-	echo
-done
-
-case $INPUT in
-1)
-        DevicePreset="-e x264 -b 700 -a 1 -E faac -B 160 -6 dpl2 -R Auto -D 0.0 -f mp4 -I -X 320 -m -x level=30:bframes=0:weightp=0:cabac=0:ref=1:vbv-maxrate=768:vbv-bufsize=2000:analyse=all:me=umh:no-fast-pskip=1:subme=6:8x8dct=0:trellis=0";;
-2)
-        DevicePreset="-e x264 -q 20.0 -a 1 -E faac -B 128 -6 dpl2 -R Auto -D 0.0 -f mp4 -X 480 -m -x cabac=0:ref=2:me=umh:bframes=0:weightp=0:subme=6:8x8dct=0:trellis=0";;
-3)
-        DevicePreset="-e x264 -q 20.0 -r 29.97 --pfr  -a 1 -E faac -B 160 -6 dpl2 -R Auto -D 0.0 -f mp4 -4 -X 960 --loose-anamorphic -m";;
-4)
-		DevicePreset="-e x264 -q 20.0 -r 29.97 --pfr  -a 1 -E faac -B 160 -6 dpl2 -R Auto -D 0.0 -f mp4 -4 -X 1024 --loose-anamorphic -m";;
-5)
-		DevicePreset="-e x264 -q 20.0 -a 1,1 -E faac,copy:ac3 -B 160,160 -6 dpl2,auto -R Auto,Auto -D 0.0,0.0 -f mp4 -4 -X 960 --loose-anamorphic -m -x cabac=0:ref=2:me=umh:b-pyramid=none:b-adapt=2:weightb=0:trellis=0:weightp=0:vbv-maxrate=9500:vbv-bufsize=9500";;
-6)
-		DevicePreset="-e x264 -q 20.0 -r 29.97 --pfr  -a 1,1 -E faac,copy:ac3 -B 160,160 -6 dpl2,auto -R Auto,Auto -D 0.0,0.0 -f mp4 -4 -X 1280 --loose-anamorphic -m";;
-*)
-        STATUS=1
-esac
-
-echo 'Creating convert script'
-#Start creating convert script
-OUTFILE1=convert_temp
-(
-cat <<'EOF'
-#!/bin/bash
-##################################################################################
-############### Convert series v 0.3 #############################################
-############### Author: Lyubov Berezina jinjiru@gmail.com ########################
-##################################################################################
-# This script is provided 'as-is', without any express or implied
-# warranty.  In no event will the author be held liable for any
-# damages arising from the use of this script.
-#
-# Permission is granted to anyone to use this script for any purpose,
-# and to alter it and redistribute it freely, subject to the following
-# restrictions:
-#
-# 1. The origin of this script must not be misrepresented; you must not
-#    claim that you wrote the original script.
-# 2. Altered scripts must be plainly marked as such, and must not be
-#    misrepresented as being the original.
-# 3. This notice may not be removed or altered from any distribution.
-##################################################################################
-# Description:
-# This script does recursive scanning of a Series folder and encodes all titles
-# with their subtitles.
-##################################################################################
-# Disclaimer:
-# I give no guarantees that this script will work on your system. It works on
-# mine (Apple Mac OS X 10.7 Lion with HandBrakeCLI 0.9.4. YMMV.
-##################################################################################
-
-cd ~/Downloads/Series/
-
-for i in *.avi;
-do 
-	BN=${i%.*}
-	START_USER_FI
-		/Applications/HandBrakeCLI -i "$BN".avi -o "$BN".m4v USER_SUBS_FORMAT YOUR_PRESET
-
-		if [ $? == 0 ]
-		then
-		mv "$BN".avi ~/.Trash/ 
-		mv "$BN".srt ~/.Trash/
-		else
-			echo "Error encoding "$BN".avi" >> errors.log;
-			rm "$BN".m4v
-		fi
-	END_USER_FI
-done
-exit
-EOF
-
-) > $OUTFILE1
-
-read -p "Do you use srt files which need to be encoded with the video files? (y/n) "
-if [ $REPLY == "y" ]; then
-	CHECK_SUBS_INPUT="if [ -f \"\$BN\".srt ]; then" 
-	SUBS_FORMAT="--srt-file \"\$BN\".srt --srt-codeset UTF-8 --srt-lang eng"
-	cat convert_temp | sed "s/START_USER_FI/$CHECK_SUBS_INPUT/g" | sed "s/END_USER_FI/fi/g" | sed "s/USER_SUBS_FORMAT/$SUBS_FORMAT/g" > convert_temp1
-else
-	cat convert_temp | sed "s/END_USER_FI//g" | sed "s/START_USER_FI//g" | sed "s/USER_SUBS_FORMAT//g" > convert_temp1	
-fi
-
-# Replace YOUR_PRESET in the convert_temp with the needed preset
-cat convert_temp1 | sed "s/YOUR_PRESET/$DevicePreset/g" > convert;
-mv convert ~/Applications;
-rm convert_temp;
-rm convert_temp1;
-chmod +x ~/Applications/convert;
-crontab -l > tmpfile;
-echo '00	06	*	*	*	/bin/bash ~/Applications/convert' >> tmpfile;
-crontab tmpfile;
-rm tmpfile;
-
-echo 'All the scripts were created successfully, now we need to install BatchRip workflows. I will now run the installer. When you finish please do not forget to come back here and finish the script installation.'
+echo 'All the scripts were created successfully, now we need to install Automator workflows. I will now run the installer. When you finish please do not forget to come back here and finish the script installation.'
 
 currentDir=$(cd `dirname $0` && pwd)
 

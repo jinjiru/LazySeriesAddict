@@ -5,39 +5,45 @@ Lazy Series Addict
 * Version 0.8 September 18th 2013
 
 ### Description
+
 There're almost 30 TV shows in my regular watchlist (here's my [watchlist]|http://trakt.tv/user/jinjiru/lists/favs) so I was in a desperate need of some system to download, organize and track the episodes. As I could not find anything that suited me I've come up with a system of my own. This system is not perfect and it has some issues to be solved in the future but it's really wirking for me so I decided to share.
 
 The system consists of several parts:
 
 1. Download episodes (not covered here)
 2. Download subtitles (I watch my shows in English with English subtitles as I'm not a native speaker)
-3. Organize everything with Hazel
+3. Organize everything with Hazel (I include several Hazel rules I use to move and rename the episodes)
 4. Keep track of downloaded episodes
 
 The Lazy Series Addict script was born to solve the problems #2-4. This system does not cover the episodes downloading.
 
 ##### Download subtitles
-After quite a long search I've found a subtitles [website]|http://www.bierdopje.com with an API which allows to get the subtitles download links. In order to use it you will need an API key which is easy to get (please see below). In order not to flood the API DB with the requests I'm using a local config file to store the shows ids. Sometimes it won't find the show or the needed subtitles files so in that cases I download them manually. But in 98% of cases it finds everything ok and there're no problems with that.
+
+After quite a long search I've found a subtitles [website]|http://www.bierdopje.com with an API which allows to get the subtitles download links. In order to use it you will need an API key which is easy to get (please see below). In order not to flood the API DB with the requests I'm using a local config file to store the shows ids. Sometimes it won't find the show or the needed subtitles files so in that cases I download them manually. But in 98% of cases it finds everything ok and there're no problems with that. I will work further on the refining of the serach mechanism.
 
 ##### Organize subtitles with Hazel
+I am using Hazel for moving and renaming the episodes. The rules are aware of different naming formats used on different trackers so 98% of the time they will manage to rename the episodes correctly (please see the Assumptions below). The rules will not currently recognize the double episodes (like Show name S01E0102) but I am working on this problem and will update the rules as soon as I come up with a solution.
 
 ##### Keep track of downloaded and watched episodes
-I often miss some episodes here and there so I needed to track the downloaded episodes so I could know if I miss something. I decided that if I've downloaded an episode AND susbtitles for this episodes then I can consider it "not missed". So I've decided to use Trakt to track my downloaded episodes. 
 
-Using Trakt requires using imdbid's for the search so I'm using the unofficial IMDB API http://mymovieapi.com and I'm still working on the refining the search mechanism and errors reporting.
+I often miss some episodes here and there so I need to track the downloaded episodes to know if I miss something. I think  that if I've downloaded an episode AND susbtitles for this episodes then I can consider it "not missed". So I've decided to use Trakt to track my downloaded episodes. 
+
+Using Trakt requires using IMDB ids for the search so I'm using the unofficial IMDB API http://mymovieapi.com and I'm still working on the refining the search mechanism and errors reporting.
 
 Using Trakt requires an API key wich is free and easy to get (please see below).
 
 ### Assumptions:
-1. The new episodes are downloaded into the ~/Downloads folder
-2. All the episodes are stored in the ~/Downloads/TVShows folder without any inner structure (as I do not store the episodes and remove them from my hard drive right after I transfer them to my iPad or watch them on my MBP.
-3. All the subtitles are downloaded and stored the same way the episodes are.
-4. All the Hazel rules are set up for these folders so if you're using any other folder you will need to change the Hazel rules to reflect your environment.
-5. In addition to the Hazel rules I'm using a simple Automator workflow so you will need to have it installed (it comes with all the current MacOS X versions AFAIK). No need to understand any Applescript or Automator itself, the workflow is ready to use (except for a small checkbox you will need to tick while installing LZA (more on this below).
+1. The new episodes are downloaded into the ~/Downloads/Movies folder and are moved into ~/Downloads/Movies/TVShows using a  Hazel rule.
+2. All the episodes are stored in the ~/Downloads/Movies/TVShows folder without any deeper inner structure (as I do not store the episodes forever and remove them from my hard drive right after I transfer them to my iPad or watch them on my MBP).
+3. All the episodes are stored with the following filename format: Show Name - S00E00.mp4 or in case of a double episode Show name - S00E0102.mp4
+4. All the subtitles are downloaded and stored the same way the episodes are.
+5. All the Hazel rules are set up for these folders so if you're using any other folder you will need to change the Hazel rules to reflect your environment.
+6. In addition to the Hazel rules I'm using a simple Automator workflows to manage the files renaming so you will need to have it installed (it comes with all the current MacOS X versions AFAIK). No need for you to understand any Applescript or Automator itself, the workflows are ready to use. 
+7. In order not to abuse the APIs I'm using the local config files which are stored in the ~/Applications folder and have the following names: getsubs.config and imdbid.config
 
 ### Requirements and optionals: 
 * Bierdopje account + API key
-* Trakt account and API key
+* Trakt account + API key
 * curl
 * wget
 * sed
@@ -48,10 +54,9 @@ Using Trakt requires an API key wich is free and easy to get (please see below).
 I give no guarantees that this script will work on your system. It works on mine (Apple MacOS X 10.8.4 Mountain Lion). YMMV.
 
 ### Disclaimer
-I'm not a programmer of any kind and I have no programming skills. This project is a work in progress and I'm 100% sure it contains bugs. I'm sure there're much more elegant ways of achieving my goals and the code is not optimal at all. But it really works for me and it does not ruin my system :) so I hope you will not judge me :) Any crituque and suggestions on the improving my code are welcome.
+I'm not a programmer of any kind and I have no programming skills. This project is a work in progress and I'm 100% sure it contains bugs. I'm sure there're much more elegant ways of achieving my goals and the code is not optimal at all. But it really works for me and it does not ruin my system :) so I hope you will not judge me :) Any crituque and suggestions on the code improval are welcome.
 
 ### Pre-setup
-
 
 #### Bierdopje account and API key:
 
@@ -104,6 +109,7 @@ Here's the profile view:
 5. Get your API key.
 
 #### Installing wget if needed:
+
 ```sh
 $> ftp ftр://ftp.gnu.org/gnu/wget/wget-latest.tar.gz 
 $> tar -xvzf wget-latest.tar.gz
@@ -115,13 +121,13 @@ $> sudo make install
 
 
 #### Installing curl if needed:
+
 ```sh
 $> wget -с httр://www.hmug.org/pub/MacOS_X/BSD/Applications/Internet/curl/curl+ssl-7.21.2-1-osx6-x86.tar.gz
 $> tar -xvzf curl+ssl-7.21.2-1-osx6-x86.tar.gz
 $> cd curl-7.21.2
 $> sudo make install
 ```
-
 
 ### LZA Installation and usage
 
