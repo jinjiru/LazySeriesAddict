@@ -22,7 +22,10 @@ The Lazy Series Addict script was born to solve the problems #2-4. This system d
 After quite a long search I've found a subtitles [website]|http://www.bierdopje.com with an API which allows to get the subtitles download links. In order to use it you will need an API key which is easy to get (please see below). In order not to flood the API DB with the requests I'm using a local config file to store the shows ids. Sometimes it won't find the show or the needed subtitles files so in that cases I download them manually. But in 98% of cases it finds everything ok and there're no problems with that. I will work further on the refining of the serach mechanism.
 
 ##### Organize subtitles with Hazel
+
 I am using Hazel for moving and renaming the episodes. The rules are aware of different naming formats used on different trackers so 98% of the time they will manage to rename the episodes correctly (please see the Assumptions below). The rules will not currently recognize the double episodes (like Show name S01E0102) but I am working on this problem and will update the rules as soon as I come up with a solution.
+
+Currently there's no way to import the Hazel rules from terminal so you will need to import them manually. Please refer to the Hazel manual on how to do it.
 
 ##### Keep track of downloaded and watched episodes
 
